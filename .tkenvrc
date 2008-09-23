@@ -1,0 +1,48 @@
+# Tkenv configuration
+option updatefreq_fast	{50}
+option updatefreq_express	{10000}
+option stepdelay	{300 ms}
+option use_mainwindow	{1}
+option print_banners	{1}
+option animation_enabled	{1}
+option nexteventmarkers	{1}
+option senddirect_arrows	{1}
+option anim_methodcalls	{1}
+option methodcalls_delay	{200}
+option animation_msgnames	{1}
+option animation_msgclassnames	{1}
+option animation_msgcolors	{1}
+option penguin_mode	{0}
+option showlayouting	{0}
+option bubbles	{1}
+option animation_speed	{1.5}
+option bkpts_enabled	{1}
+option expressmode_autoupdate	{1}
+config mainwin-geom	{907x576+367+0}
+config rununtil-event	{}
+config last-nedfile	{}
+config filtobjlist-category	{mqsgvo}
+config display-timeline	{1}
+config filtobjlist-maxcount	{100000}
+config log-save-filename	{omnetpp.out}
+config editor-findstring	{}
+config rununtil-time	{}
+config dontshow	{}
+config editor-regexp	{0}
+config filtobjlist-class	{}
+config rununtil-mode	{Express (tracing off)}
+config filtobjlist-name	{}
+config confirm-exit	{1}
+config editor-backwards	{1}
+config display-treeview	{1}
+config timeline-maxnumevents	{1000}
+config editor-case-sensitive	{0}
+config editor-whole-words	{0}
+config filtobjlist-order	{Class}
+inspector "flatNet.cli[0].trafGen" "IPMeshClientApp" "1" "415x316+423+632"
+inspector "flatNet.cli[1].trafGen" "IPMeshClientApp" "1" "430x315+844+633"
+inspector "flatNet" "FlatNet" "2" "361x428+0+0"
+inspector "flatNet.server.trafGen" "IPMeshServerApp" "1" "417x315+0+605"
+inspector "simulation.scheduled-events.init_mesh" "PPPFrame" "1" "460x315+814+633"
+inspector "flatNet.srv" "BurstHost" "2" "421x399+695+0"
+
