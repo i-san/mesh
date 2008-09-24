@@ -40,8 +40,8 @@ private:
 	void addControlInfo(cMessage *msg,const IPAddress &ipAddress) const;	
 
 	bool isPartner(const std::string &userName) ;
-	void addPartner(const MeshUser &meshUser, bool isActive, const ListPieceStatusType &lNewPiece = ListPieceStatusType() );
-	void updatePartner(const std::string &userName,UserStatusType userStatus,const ListPieceStatusType &lNewPiece = ListPieceStatusType() );
+	void addPartner(const MeshUser &meshUser, bool isActive, unsigned long quantTime = 0, const ListPieceStatusType &lNewPiece = ListPieceStatusType() );
+	void updatePartner(const std::string &userName,UserStatusType userStatus,unsigned long quantTime, const ListPieceStatusType &lNewPiece = ListPieceStatusType() );
 	//void removePartner(const std::string &userName);	
 	
 	void updatePartnerPiece(const std::string &userName, unsigned long pieceNum);

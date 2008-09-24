@@ -2,6 +2,7 @@
 #include "MeshClientData.h"
 #include <list>
 
+
 using namespace std;
 
 int MeshClientData::number=0;
@@ -40,41 +41,16 @@ bool MeshClientData::isPartner(const string &userName) {
 	return false;
 }
 
-void MeshClientData::addPartner(const MeshUser &meshUser, bool isActive, int partnerQuantTime, const ListPieceStatusType &lPartnerPiece) {	
-	MeshUserClientData *m = new MeshUserClientData(meshUser.userName,meshUser.ipAddress,(isActive?ACTIVE:INACTIVE));
-	lPartner.push_back(m);
-
-	list<PieceStatusType> lNewPiece = list<PieceStatusType>();
-	if (partnerQuantTime = quantTime) lNewPiece = lPartnerPiece;
-		
-	else if ( quantTime > partnerQuantTime ) {
-		int size = partnerQuantTime + pieceCount - quantTime;
-		if (size > 0) {			
-			list<PieceStatusType>::iterator it = lPartnerPiece.begin();
-			advance(itNew,quantTime-partnerQuantTime);
-			for (int i=0;i<size;i++it++) {
-				lNewPiece.push_back(*it);
-			}
-			it = m->lPiece.begin();
-			advance(it,size);
-			for (int i=0;i<pieceCount-size;i++,it++) {
-				lNewPiece.push_back(*it);
-			}
-		}
-	}else {
-		int size = quantTime + pieceCount - partnerQuantTime;
-		if (size > 0) {
-		}
-		
-	}
-	m->lPiece = lNewPiece;
+void MeshClientData::addPartner(const MeshUser &meshUser, bool isActive, unsigned long quantTime, const ListPieceStatusType &lPartnerPiece) {	
+	lPartner.push_back(new MeshUserClientData(meshUser.userName,meshUser.ipAddress,(isActive?ACTIVE:INACTIVE),quantTime,lPartnerPiece));
 }
 
-void MeshClientData::updatePartner(const string &userName, UserStatusType userStatus,const ListPieceStatusType &lNewPiece) {
+void MeshClientData::updatePartner(const string &userName, UserStatusType userStatus,unsigned long quantTime, const ListPieceStatusType &lNewPiece) {
 	for(list<MeshUserClientData*>::iterator it=lPartner.begin();it != lPartner.end();it++) {
 		if ((*it)->userName == userName) { 
 			(*it)->status = userStatus;
 			(*it)->lPiece = lNewPiece;
+			(*it)->quantTime = quantTime;
 		}
 	}
 }
@@ -88,25 +64,38 @@ void MeshClientData::updatePartner(const string &userName, UserStatusType userSt
 //**************************** pieces control ***********************************************
 
 void MeshClientData::updatePartnerPiece(const string &userName, unsigned long pieceNum) {
-	if ((pieceNum>quantTime+pieceCount)||(pieceNum<quantTime)) return;
+	//if ((pieceNum>quantTime+pieceCount)||(pieceNum<quantTime)) return;
 	for(list<MeshUserClientData*>::iterator it=lPartner.begin();it != lPartner.end();it++) {
-		if ((*it)->userName == userName) {
-			list<PieceStatusType>::iterator itPiece = (*it)->lPiece.begin();			
-			advance(itPiece,pieceNum-quantTime);
-//cout << "pieceNum=" << pieceNum << " quantTime="  << quantTime << " size=" << lPiece.size() << endl;
-			(*it)->lPiece.erase(itPiece);
-			
-			itPiece = (*it)->lPiece.begin();			
-			advance(itPiece,pieceNum-quantTime);
-			(*it)->lPiece.insert(itPiece,RECIEVED);
+//cout << "pieceNum=" << pieceNum << " quantTime="  << quantTime << " p->quantTime="  << (*it)->quantTime << " size=" << lPiece.size() << endl;
+		if (((*it)->userName == userName)&&( pieceNum >= (*it)->quantTime )) {
 
-			(*it)->status = ACTIVE;			
+			int size = ( pieceNum - (*it)->quantTime - pieceCount + 1);
+			if (size > 0) { 
+				for (int i=0;i<size-1;i++) {
+					(*it)->lPiece.pop_front();
+					(*it)->lPiece.push_back(ABSENT);					
+				}
+				(*it)->lPiece.pop_front();
+				(*it)->lPiece.push_back(RECIEVED);
+				(*it)->quantTime+=size;
+			}else{
+				list<PieceStatusType>::iterator itPiece = (*it)->lPiece.begin();			
+				advance(itPiece,pieceNum-(*it)->quantTime);
+	
+				(*it)->lPiece.erase(itPiece);
+				
+				itPiece = (*it)->lPiece.begin();			
+				advance(itPiece,pieceNum-(*it)->quantTime);
+				(*it)->lPiece.insert(itPiece,RECIEVED);
+	
+				(*it)->status = ACTIVE;
+			}	
 		}
 	}
 }
 
 void MeshClientData::updateCurrentPiece(unsigned long pieceNum) {
-cout << "cli"<<module->parentModule()->index()<<"pieceNum=" << pieceNum << " quantTime=" << quantTime << " " << ((pieceNum>quantTime+pieceCount)||(pieceNum<quantTime)) << endl;
+cout << "cli"<<module->parentModule()->index()<<": pieceNum=" << pieceNum << " quantTime=" << quantTime << " " << ((pieceNum>quantTime+pieceCount)||(pieceNum<quantTime)) << endl;
 	if ((pieceNum>quantTime+pieceCount)||(pieceNum<quantTime)) return;
 	list<PieceStatusType>::iterator itPiece = lPiece.begin();
 	advance(itPiece,pieceNum-quantTime);
@@ -117,6 +106,7 @@ cout << "cli"<<module->parentModule()->index()<<"pieceNum=" << pieceNum << " qua
 }
 
 ostream& operator<<( ostream &os, const MeshClientData &clientData ) {		
+	os << clientData.quantTime ;
 	for(list<MeshUserClientData*>::const_iterator it=clientData.lPartner.begin();it != clientData.lPartner.end();it++) {		
 		os << **it;
 	}
@@ -198,11 +188,11 @@ void MeshClientData::processSelfMessage(cMessage *msg) {
 		updateLPiece();
 		if (!isServer) requestPieces();
 			
-		module->scheduleAt(module->simTime()+pieceSimTimeLength, new cMessage("timerLPieceUpdate"));
+		module->scheduleAt(module->simTime()+0.05, new cMessage("timerLPieceUpdate"));
 	}else if (string(msg->name())=="timerClientStart") {
 		updateLPiece();
 		module->send(genInitMessage(),"to_ip");
-		module->scheduleAt(module->simTime()+pieceSimTimeLength, new cMessage("timerLPieceUpdate"));
+		module->scheduleAt(module->simTime()+0.05, new cMessage("timerLPieceUpdate"));
 	}		
 }
 
@@ -223,15 +213,15 @@ void MeshClientData::processMessage(cMessage *msg) {
 		ConnectMeshRequestMessage *msgRequest = (ConnectMeshRequestMessage*)msg;
 				
 		if (!isPartner(msgRequest->getSrcName())) {
-			addPartner(MeshUser(msgRequest->getSrcName(),msgRequest->getSrcIpAddress()),true,msgRequest->getLPiece());
+			addPartner(MeshUser(msgRequest->getSrcName(),msgRequest->getSrcIpAddress()),true,msgRequest->getQuantTime(),msgRequest->getLPiece());
 		} else{
-			updatePartner(msgRequest->getSrcName(),ACTIVE,msgRequest->getLPiece());
+			updatePartner(msgRequest->getSrcName(),ACTIVE,msgRequest->getQuantTime(),msgRequest->getLPiece());
 		}
 		module->send(genConnectResponseMessage(0,msgRequest->getSrcIpAddress()),"to_ip");
 	}else if (dynamic_cast<ConnectMeshResponseMessage*>(msg)!=NULL) {
 		ConnectMeshResponseMessage *msgResponse = (ConnectMeshResponseMessage*)msg;
 		if (msgResponse->getErrorCode() == 0) {
-			updatePartner(msgResponse->getSrcName(),ACTIVE,msgResponse->getLPiece());
+			updatePartner(msgResponse->getSrcName(),ACTIVE,msgResponse->getQuantTime(),msgResponse->getLPiece());
 		}else {
 			ev << "------Error----errorCode=" << msgResponse->getErrorCode() << endl;
 		}
@@ -253,7 +243,7 @@ void MeshClientData::processMessage(cMessage *msg) {
 		list<MeshUserClientData*>::iterator itPartner = lPartner.begin();
 		for	(;itPartner!=lPartner.end();itPartner++) {
 //cout << "servers partner: " << (*itPartner)->userName << endl;
-			if ( (*itPartner)->userName == msgRequest->getSrcName() ) { 
+			if ( ( (*itPartner)->userName == msgRequest->getSrcName() )&&((*itPartner)->status == ACTIVE) ) { 
 				ipAddress = (*itPartner)->ipAddress;
 				isPartner = true;
 				break;
@@ -261,7 +251,7 @@ void MeshClientData::processMessage(cMessage *msg) {
 		}
 		if (isPartner) {
 			module->send(genPiece(numPiece,ipAddress),"to_ip") ;
-		}else {			
+		}else {	
 			ev << "---------------ERRROR!---partner is uvailable, numPiece=" << numPiece << " req from " <<msgRequest->getSrcName() << endl;
 		}
 		
@@ -291,12 +281,12 @@ void MeshClientData::updateLPiece() {
 			lPiece.pop_front();
 			lPiece.push_back(ABSENT);		
 		}
-		for (list<MeshUserClientData*>::iterator it=lPartner.begin();it!=lPartner.end();it++) {
+		/*for (list<MeshUserClientData*>::iterator it=lPartner.begin();it!=lPartner.end();it++) {
 			for (int i=0,count=newQuantTime-quantTime;i<count;i++) {
 				(*it)->lPiece.pop_front();
 				(*it)->lPiece.push_back(ABSENT);
 			}	
-		}
+		}*/
 	}else {
 		//cout << "server: newQuantTime=" << newQuantTime << " quantTime" << quantTime << endl;
 		for (int i=0,count=newQuantTime-quantTime;i<count;i++) {
@@ -310,34 +300,40 @@ void MeshClientData::updateLPiece() {
 
 
 bool compare_partners_piece_recieved(MeshUserClientData* first, MeshUserClientData* second) {
+	if (first->pieceRequested == 0) return false;
+	if (second->pieceRequested == 0) return true;
 	return ( ((double)(first->pieceRecieved)) / (first->pieceRequested) <  ((double)(second->pieceRecieved)) / (second->pieceRequested) );
 }
 
 void MeshClientData::requestPieces() {
-	int iPiece = ( quantTime>pieceStartDelayCount ? 0 : pieceStartDelayCount );
+	int iPiece = ( quantTime>pieceStartDelayCount ? 0 : pieceStartDelayCount-quantTime );
 	lPartner.sort(compare_partners_piece_recieved);
 	list<PieceStatusType>::iterator itPiece=lPiece.begin();
 	advance(itPiece,iPiece);	
 	while(iPiece<pieceCount) {	
 	if ((*itPiece)==ABSENT) {
+//cout << userName << ": search piece num " << iPiece+quantTime << endl;
 		for (list<MeshUserClientData*>::iterator itPartner=lPartner.begin();itPartner!=lPartner.end();itPartner++) {
 			if ((*itPartner)->status == ACTIVE) {
-				list<PieceStatusType>::iterator it = (*itPartner)->lPiece.begin();
-				advance(it,iPiece);
-				if ((*it)==RECIEVED) {
+
+				if ( (iPiece+quantTime >= (*itPartner)->quantTime )&&( iPiece+quantTime <= (*itPartner)->quantTime+pieceCount) ) {
+					list<PieceStatusType>::iterator it = (*itPartner)->lPiece.begin();
+					advance(it,iPiece+quantTime-(*itPartner)->quantTime);
+					if ((*it)==RECIEVED) {
 cout << userName << ": req piece num " << iPiece+quantTime << " from " << (*itPartner)->userName << endl;
-					module->send(genPieceRequestMessage(iPiece+quantTime,(*itPartner)->ipAddress),"to_ip");
-					
-					lPiece.erase(itPiece);
-					itPiece = lPiece.begin();
-					advance(itPiece,iPiece);
-					lPiece.insert(itPiece,REQUESTED);
-					itPiece = lPiece.begin();
-					advance(itPiece,iPiece);
-	
-					(*itPartner)->pieceRequested++;
-					lPartner.sort(compare_partners_piece_recieved);
-					break;
+						module->send(genPieceRequestMessage(iPiece+quantTime,(*itPartner)->ipAddress),"to_ip");
+						
+						lPiece.erase(itPiece);
+						itPiece = lPiece.begin();
+						advance(itPiece,iPiece);
+						lPiece.insert(itPiece,REQUESTED);
+						itPiece = lPiece.begin();
+						advance(itPiece,iPiece);
+		
+						(*itPartner)->pieceRequested++;
+						lPartner.sort(compare_partners_piece_recieved);
+						break;
+					}
 				}
 			}
 		}	

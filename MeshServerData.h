@@ -8,7 +8,6 @@
 
 class MeshServerData {
 	std::vector<MeshUserServerData*> vUser;		
-	int maxPartners; 
 
 	cSimpleModule *module;
 

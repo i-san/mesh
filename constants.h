@@ -1,6 +1,6 @@
 
 
-const int maxPartners = 10;
+const int maxPartners = 3;
 const long pieceCount = 40;  // 10 sec
 const double pieceSimTimeLength = 0.25; // время веидопотока в секундах, которое передается одним писом
 

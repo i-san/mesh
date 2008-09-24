@@ -14,16 +14,18 @@ MeshUserServerData::MeshUserServerData( const std::string &userName, const IPAdd
 	this->ipAddress = ipAddress;
 }
 
-MeshUserClientData::MeshUserClientData( const std::string &userName, const IPAddress &ipAddress, UserStatusType status) {
+MeshUserClientData::MeshUserClientData( const std::string &userName, const IPAddress &ipAddress, UserStatusType status, unsigned long quantTime, const ListPieceStatusType &lPiece) {
 	this->userName = userName;
 	this->ipAddress = ipAddress;
 	this->status = status;
+	this->quantTime = quantTime;
+	this->lPiece = lPiece;
 	pieceRequested = 0;
-	pieceRecieved = 0;	
+	pieceRecieved = 0;
 }
 
 std::ostream& operator<<(std::ostream& os,const MeshUserClientData &clientData) {
-	os << clientData.userName << " "<< clientData.ipAddress << " " << clientData.status << " (" << clientData.pieceRequested << "," << clientData.pieceRecieved << ")" << endl;
+	os << clientData.userName << " "<< clientData.ipAddress << " " << clientData.status << " (" << clientData.pieceRequested << "," << clientData.pieceRecieved << ") " << clientData.quantTime << endl;
 	int i=0;
 	for (list<PieceStatusType>::const_iterator it=clientData.lPiece.begin();it!=clientData.lPiece.end();it++) {
 		os << (*it); 

@@ -17,7 +17,7 @@ typedef std::list<PieceStatusType> ListPieceStatusType;
 struct MeshUser {
 	std::string userName;
 	IPAddress  ipAddress;	
-	
+
 	MeshUser() {}	
 	MeshUser( const std::string &_userName, const IPAddress &_ipAddress ) 
 		: userName( _userName ), ipAddress( _ipAddress ) { }	
@@ -31,13 +31,14 @@ struct MeshUserServerData : public MeshUser {
 
 struct MeshUserClientData : public MeshUser {
 	
+	unsigned long quantTime;
 	UserStatusType status;
 	unsigned long	pieceRequested;	
 	unsigned long	pieceRecieved;
 
 	std::list<PieceStatusType>	lPiece;
 
-	MeshUserClientData(const std::string &userName, const IPAddress &ipAddress, UserStatusType status);
+	MeshUserClientData(const std::string &userName, const IPAddress &ipAddress, UserStatusType status, unsigned long quantTime, const ListPieceStatusType &lPiece);
 
 	friend std::ostream& operator<<(std::ostream& os, const MeshUserClientData &clientData);
 };
